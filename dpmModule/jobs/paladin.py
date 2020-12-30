@@ -1,8 +1,8 @@
 from ..kernel import core
 from ..character import characterKernel as ck
 from ..status.ability import Ability_tool
-from ..execution.rules import ComplexConditionRule, ConditionRule, RuleSet
-from . import globalSkill
+from ..execution.rules import ComplexConditionRule, ConcurrentRunRule, ConditionRule, RuleSet
+from . import globalSkill, jobutils
 from .jobbranch import warriors
 from math import ceil
 from typing import Any, Dict
@@ -22,7 +22,7 @@ class JobGenerator(ck.JobGenerator):
         def use_soul_contract(soul_contract, grand_cross, holy_unity):
             if holy_unity.is_not_active():
                 return False
-            if grand_cross.is_usable() and holy_unity.is_time_left(7000, 1):
+            if grand_cross.is_usable() and holy_unity.is_time_left(9000, 1):
                 return True
             return False
 
@@ -37,6 +37,8 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(ConditionRule('그랜드 크로스', '홀리 유니티', lambda sk: sk.is_time_left(7000, 1)), RuleSet.BASE)
         ruleset.add_rule(ComplexConditionRule('소울 컨트랙트', ['그랜드 크로스', '홀리 유니티'], use_soul_contract), RuleSet.BASE)
         ruleset.add_rule(ComplexConditionRule('마이티 묠니르(시전)', ['홀리 유니티'], use_mighty_mjolnir), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '소울 컨트랙트'), RuleSet.BASE)
         return ruleset
 
     def get_modifier_optimization_hint(self):
@@ -150,6 +152,12 @@ class JobGenerator(ck.JobGenerator):
             auraweapon_builder.add_aura_weapon(sk)
         AuraWeaponBuff, AuraWeapon = auraweapon_builder.get_buff()
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return(
             Blast,
             [
@@ -163,7 +171,9 @@ class JobGenerator(ck.JobGenerator):
                 AuraWeaponBuff,
                 AuraWeapon,
                 globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat),
-                globalSkill.soul_contract()
+                globalSkill.soul_contract(),
+                Restraint,
+                WeaponPuff,
             ] +
             [LighteningCharge, LighteningChargeDOT, DivineCharge, Sanctuary, MightyMjollnirInit, GrandCross, MirrorBreak, MirrorSpider] +
             [BlessedHammer, BlessedHammerActive] +

@@ -2,7 +2,7 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import ComplexConditionRule, RuleSet, ConditionRule
+from ..execution.rules import ComplexConditionRule, ConcurrentRunRule, RuleSet, ConditionRule
 from . import globalSkill
 from .jobbranch import thieves
 from . import jobutils
@@ -58,6 +58,8 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(ComplexConditionRule('소울 컨트랙트', ['블레이드 스톰', '얼티밋 다크 사이트'], sync_burst_buff), RuleSet.BASE)
         ruleset.add_rule(ConditionRule('블레이드 스톰', '얼티밋 다크 사이트', lambda sk: sk.is_active() or sk.is_cooltime_left(80000, 1)), RuleSet.BASE)
         ruleset.add_rule(ConditionRule('메이플월드 여신의 축복', '얼티밋 다크 사이트', lambda sk: sk.is_active() or sk.is_usable()), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '레디 투 다이'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '레디 투 다이'), RuleSet.BASE)
         return ruleset
 
     def generate(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
@@ -144,11 +146,17 @@ class JobGenerator(ck.JobGenerator):
         for sk in [PhantomBlow, SuddenRaid, FinalCut, FlashBang, AsuraTick, 
             BladeStorm, BladeStormTick, KarmaFury, BladeTornado, HiddenBlade, HauntedEdge]:
             jobutils.create_auxilary_attack(sk, 0.7, nametag='(미러이미징)')
+
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
         
         return(PhantomBlow,
                 [globalSkill.maple_heros(chtr.level, combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                     Booster, DarkSight, FinalCutBuff, EpicAdventure, FlashBangDebuff, HiddenBladeBuff, globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat),
-                    UltimateDarksight, ReadyToDie, globalSkill.soul_contract()] +\
+                    UltimateDarksight, ReadyToDie, globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [FinalCut, FlashBang, BladeTornado, SuddenRaid, KarmaFury, BladeStorm, Asura, MirrorBreak, MirrorSpider] +\
                 [SuddenRaidDOT, Venom, BladeTornadoSummon, BladeTornadoSummonMirrorImaging, HauntedEdge] +\
                 [] +\

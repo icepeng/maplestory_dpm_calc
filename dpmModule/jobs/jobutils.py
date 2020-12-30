@@ -26,6 +26,8 @@ def create_auxilary_attack(skill_wrapper: core.DamageSkillWrapper, ratio=1, name
 def get_weapon_att(chtr):
     return chtr.itemlist["weapon"].weapon_base_att
 
+def get_weapon_total_att(chtr):
+    return chtr.itemlist["weapon"].get_modifier().att
 
 def debug_skill(skill_wrapper):
     skill_wrapper.onJustAfter(

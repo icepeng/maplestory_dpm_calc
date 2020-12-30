@@ -2,8 +2,8 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import ReservationRule, RuleSet, InactiveRule
-from . import globalSkill
+from ..execution.rules import ConcurrentRunRule, ReservationRule, RuleSet, InactiveRule
+from . import globalSkill, jobutils
 from .jobbranch import warriors
 from math import ceil
 from typing import Any, Dict
@@ -69,6 +69,9 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(InactiveRule('콤보 데스폴트', '콤보 인스팅트'), RuleSet.BASE)
         ruleset.add_rule(InactiveRule('레이지 업라이징', '콤보 인스팅트'), RuleSet.BASE)
         ruleset.add_rule(ReservationRule('메이플월드 여신의 축복', '콤보 인스팅트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '콤보 인스팅트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('소울 컨트랙트', '소드 오브 버닝 소울'), RuleSet.BASE)
         return ruleset
 
 
@@ -192,12 +195,18 @@ class JobGenerator(ck.JobGenerator):
             auraweapon_builder.add_aura_weapon(sk)
         AuraWeaponBuff, AuraWeapon = auraweapon_builder.get_buff()
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return(RaisingBlowInrage,
                 [globalSkill.maple_heros(chtr.level, combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(), globalSkill.useful_wind_booster(),
                     globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat), ComboAttack, Fury, EpicAdventure, Valhalla, 
                     InsizingBuff, InsizingDot, AuraWeaponBuff, AuraWeapon, ComboDeathFaultBuff, 
                     ComboInstinct, ComboInstinctOff, PanicBuff,
-                    globalSkill.soul_contract()] +\
+                    globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [Panic, Insizing, ComboDeathFault, SwordIllusionInit, RisingRage] +\
                 [SwordOfBurningSoul, MirrorBreak, MirrorSpider] +\
                 [RaisingBlowInrage])

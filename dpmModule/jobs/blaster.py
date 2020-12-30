@@ -3,7 +3,7 @@ from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
 from ..execution.rules import ConcurrentRunRule, RuleSet, InactiveRule, SynchronizeRule
-from . import globalSkill
+from . import globalSkill, jobutils
 from .jobbranch import warriors
 from .jobclass import resistance
 from math import ceil
@@ -58,6 +58,10 @@ class JobGenerator(ck.JobGenerator):
 
         ruleset.add_rule(SynchronizeRule('버닝 브레이커(준비)', '해머 스매시(디버프)', 3420, 1), RuleSet.BASE)
         ruleset.add_rule(SynchronizeRule('발칸 펀치', '해머 스매시(디버프)', 8000, 1), RuleSet.BASE)
+
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '맥시마이즈 캐논'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '벙커 버스터'), RuleSet.BASE)
+        ruleset.add_rule(SynchronizeRule('리스트레인트 링', '벙커 버스터', 6000, -1), RuleSet.BASE)
         
         return ruleset
 
@@ -236,11 +240,17 @@ class JobGenerator(ck.JobGenerator):
         BurningBreaker.onBefore(SoulContract)
 
         SoulContract.protect_from_running()
+
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
         
         return(Mag_Pang,
                 [globalSkill.maple_heros(chtr.level, combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                     Booster, globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat), MaximizeCannon, WillOfLiberty, AuraWeaponBuff, AuraWeapon, BunkerBuster, Cylinder, Overheat, HammerSmashDebuff,
-                    SoulContract] +\
+                    SoulContract, Restraint, WeaponPuff] +\
                 [ReleaseHammer, BurningBreaker, BalkanPunch, AfterImageShockInit, AfterImageShockActive, AfterImageShockPassive, MirrorBreak, MirrorSpider] +\
                 [RegistanceLineInfantry, HammerSmashWave] +\
                 [Mag_Pang])

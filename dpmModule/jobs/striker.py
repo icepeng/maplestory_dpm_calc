@@ -2,7 +2,7 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import MutualRule, ReservationRule, RuleSet, ConcurrentRunRule
+from ..execution.rules import InactiveRule, MutualRule, ReservationRule, RuleSet, ConcurrentRunRule
 from . import globalSkill
 from . import jobutils
 from .jobbranch import pirates
@@ -36,9 +36,12 @@ class JobGenerator(ck.JobGenerator):
 
     def get_ruleset(self):
         ruleset = RuleSet()
+        ruleset.add_rule(InactiveRule('소울 컨트랙트', '천지개벽'), RuleSet.BASE)
         ruleset.add_rule(ReservationRule('소울 컨트랙트', '창뇌연격(시전)'), RuleSet.BASE)
         ruleset.add_rule(ConcurrentRunRule('창뇌연격(시전)', '소울 컨트랙트'), RuleSet.BASE)
         ruleset.add_rule(MutualRule('천지개벽', '창뇌연격(시전)'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '소울 컨트랙트'), RuleSet.BASE)
         return ruleset
 
     def get_passive_skill_list(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
@@ -195,11 +198,17 @@ class JobGenerator(ck.JobGenerator):
         SpearLightningAttackInit.onAfter(core.RepeatElement(SpearLightningAttack, 11))
         SpearLightningAttackInit.onAfter(SpearLightningAttack_Final)
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return(BasicAttackWrapper,
                 [globalSkill.maple_heros(chtr.level, name = "시그너스 나이츠", combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                     LightningStack, Booster, ChookRoi, WindBooster, LuckyDice,
                     HurricaneBuff, GloryOfGuardians, SkyOpen, Overdrive, ShinNoiHapL, cygnus.CygnusBlessWrapper(vEhc, 0, 0, chtr.level),
-                    globalSkill.soul_contract()] +\
+                    globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [GioaTan, CygnusPhalanx, NoiShinChanGeuk, SpearLightningAttackInit, MirrorBreak, MirrorSpider] +\
                 [ShinNoiHapLAttack, NoiShinChanGeukAttack] +\
                 [] +\

@@ -3,7 +3,7 @@ from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
 from ..execution.rules import RuleSet, MutualRule, ConcurrentRunRule, ReservationRule
-from . import globalSkill
+from . import globalSkill, jobutils
 from .jobbranch import bowmen
 from .jobclass import adventurer
 from math import ceil
@@ -33,6 +33,8 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(ReservationRule("크리티컬 리인포스", "스플릿 애로우"), RuleSet.BASE)
         ruleset.add_rule(ConcurrentRunRule("스플릿 애로우", "소울 컨트랙트"), RuleSet.BASE)
         ruleset.add_rule(ConcurrentRunRule("리피팅 크로스보우 카트리지", "소울 컨트랙트"), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule("리스트레인트 링", "소울 컨트랙트"), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule("웨폰퍼프 링", "소울 컨트랙트"), RuleSet.BASE)
 
         return ruleset
 
@@ -334,6 +336,12 @@ class JobGenerator(ck.JobGenerator):
             )
         )
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return (
             BasicAttack,
             [
@@ -349,6 +357,8 @@ class JobGenerator(ck.JobGenerator):
                 RepeatingCartrige,
                 SplitArrowBuff,
                 globalSkill.soul_contract(),
+                Restraint,
+                WeaponPuff,
             ]
             + [TrueSnipping, ChargedArrowHold, ChargedArrow]
             + [Freezer, Evolve, GuidedArrow, MirrorBreak, MirrorSpider]

@@ -2,8 +2,8 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import RuleSet, ConditionRule
-from . import globalSkill
+from ..execution.rules import ConcurrentRunRule, RuleSet, ConditionRule
+from . import globalSkill, jobutils
 from .jobclass import cygnus
 from .jobbranch import magicians
 from typing import Any, Dict
@@ -26,6 +26,8 @@ class JobGenerator(ck.JobGenerator):
 
         ruleset = RuleSet()
         ruleset.add_rule(ConditionRule('소울 컨트랙트', '인피니티 플레임 서클(개시)', check_ifc_time), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '소울 컨트랙트'), RuleSet.BASE)
         return ruleset
 
     def get_passive_skill_list(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
@@ -136,11 +138,17 @@ class JobGenerator(ck.JobGenerator):
                     SalamanderMischeif, CygnusPhalanx]:
             overload_mana_builder.add_skill(sk)
         OverloadMana = overload_mana_builder.get_buff()
+
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
         
         return (OrbitalFlame,
                 [globalSkill.maple_heros(chtr.level, name = "시그너스 나이츠", combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                      cygnus.CygnusBlessWrapper(vEhc, 0, 0, chtr.level), WordOfFire, FiresOfCreation, BurningRegion, GloryOfGuardians, OverloadMana, Flame, SalamanderMischeifBuff,
-                    globalSkill.soul_contract()] +\
+                    globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [SalamanderMischeif, CygnusPhalanx, BlazingOrbital, DragonSlaveInit, SavageFlame, InfinityFlameCircleInit, 
                     InfernoRize, MirrorBreak, MirrorSpider] +\
                 [IgnitionDOT] +\

@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 from .loader import load_data
-from .preset import get_preset
+from .preset import get_preset, get_preset_list
 from .saver import save_data
 
 try:
@@ -79,8 +79,26 @@ def write_sheet(args, df: pd.DataFrame, writer: xlsxwriter):
     worksheet.write("D2", hit_total / (time / 60), num_format)
 
 
+def all(args):
+    presets = get_preset_list()
+    tasks = [
+        argparse.Namespace(
+            id=id, ulevel=args.ulevel, cdr=cdr, time=args.time, task=args.task
+        )
+        for id, *_ in presets for cdr in [0, 2, 4]
+    ]
+
+    Path("data/detail_sheet/").mkdir(parents=True, exist_ok=True)
+    writer = pd.ExcelWriter("data/detail_sheet/full.xlsx", engine="xlsxwriter")
+    for task in tasks:
+        data = load_data(task)
+        write_sheet(task, data, writer)
+    writer.close()
+
+
 if __name__ == "__main__":
     args = get_args()
+    # all(args)
     if args.calc:
         data = save_data(args)
     else:

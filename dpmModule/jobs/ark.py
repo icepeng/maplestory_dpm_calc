@@ -2,7 +2,7 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import RuleSet, ConcurrentRunRule, ConditionRule
+from ..execution.rules import ReservationRule, RuleSet, ConcurrentRunRule, ConditionRule
 from . import globalSkill
 from .jobbranch import pirates
 from .jobclass import flora
@@ -170,6 +170,9 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(ConcurrentRunRule("그란디스 여신의 축복(레프)","매직 서킷 풀드라이브(버프)"), RuleSet.BASE)
         ruleset.add_rule(ConditionRule('영원히 굶주리는 짐승(개시)', '인피니티 스펠', lambda x:x.is_cooltime_left(100000, 1)), RuleSet.BASE)
         ruleset.add_rule(ConditionRule('끝없는 고통', '인피니티 스펠', lambda x:x.is_cooltime_left(50000, 1)), RuleSet.BASE)
+        
+        ruleset.add_rule(ReservationRule('리스트레인트 링', '영원히 굶주리는 짐승(개시)'), RuleSet.BASE)
+        ruleset.add_rule(ReservationRule('웨폰퍼프 링', '영원히 굶주리는 짐승(개시)'), RuleSet.BASE)
 
         return ruleset
 
@@ -519,12 +522,18 @@ class JobGenerator(ck.JobGenerator):
         DeviousNightmare.protect_from_running()
         DeviousDream.protect_from_running()
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return(PlainAttack, 
                 [globalSkill.maple_heros(chtr.level, name = "레프의 용사", combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                     ContactCaravan, Booster, LuckyDice, ScarletBuff, AbyssBuff, SpecterState, ScarletBuff2, AbyssBuff2,
                     ChargeSpellAmplification, WraithOfGod, InfinitySpell, MagicCircuitFullDrive, FloraGoddessBless, Overdrive, 
                     MemoryOfSourceBuff, EndlessPainBuff,
-                    globalSkill.soul_contract()] +\
+                    globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [MemoryOfSource, RaptRestriction, RaptRestrictionEnd, UpcomingDeath, ReturningHate,
                     ForeverHungryBeastInit, ForeverHungryBeastTrigger, CrawlingFear_Link, EndlessPain, 
                     EndlessNightmare_Link, ScarletChargeDrive_Link, GustChargeDrive_Link, AbyssChargeDrive_Link, 

@@ -1,7 +1,7 @@
 from ..kernel import core
 from ..character import characterKernel as ck
 from ..status.ability import Ability_tool
-from ..execution.rules import RuleSet, ConditionRule
+from ..execution.rules import ConcurrentRunRule, RuleSet, ConditionRule
 from . import globalSkill
 from .jobbranch import pirates
 from .jobclass import adventurer
@@ -34,6 +34,8 @@ class JobGenerator(ck.JobGenerator):
             ConditionRule("빅 휴즈 기간틱 캐논볼", "소울 컨트랙트", cannonball_rule),
             RuleSet.BASE,
         )
+        ruleset.add_rule(ConcurrentRunRule("리스트레인트 링", "소울 컨트랙트"), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule("웨폰퍼프 링", "소울 컨트랙트"), RuleSet.BASE)
         return ruleset
 
     def get_modifier_optimization_hint(self):
@@ -346,6 +348,12 @@ class JobGenerator(ck.JobGenerator):
 
         SpecialMonkeyEscort_Cannon.onJustAfter(SpecialMonkeyEscort_Bomb)
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return (
             CannonBuster,
             [
@@ -363,6 +371,8 @@ class JobGenerator(ck.JobGenerator):
                 Overdrive,
                 PirateFlag,
                 globalSkill.soul_contract(),
+                Restraint,
+                WeaponPuff,
             ]
             + [
                 SpecialMonkeyEscort_Cannon,

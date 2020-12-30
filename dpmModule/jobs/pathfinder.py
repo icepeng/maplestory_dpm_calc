@@ -2,8 +2,8 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import ConditionRule, DisableRule, MutualRule, RuleSet
-from . import globalSkill
+from ..execution.rules import ConcurrentRunRule, ConditionRule, DisableRule, MutualRule, RuleSet
+from . import globalSkill, jobutils
 from .jobbranch import bowmen
 from .jobclass import adventurer
 from math import ceil
@@ -74,6 +74,9 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(MutualRule('이볼브', '레이븐 템페스트'), RuleSet.BASE)
         ruleset.add_rule(ConditionRule('카디널 트랜지션', '커스 트랜지션', lambda sk: sk.is_time_left(2000, -1)), RuleSet.BASE)
         ruleset.add_rule(ConditionRule('얼티밋 블래스트', '렐릭 차지', lambda sk: sk.judge(1000, 1)), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('소울 컨트랙트', '레이븐 템페스트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '소울 컨트랙트'), RuleSet.BASE)
         return ruleset
 
     def get_modifier_optimization_hint(self):
@@ -316,6 +319,12 @@ class JobGenerator(ck.JobGenerator):
         
         # 기본공격 = 블래스트-디스차지
         CardinalBlast.onAfter(CardinalDischarge)
+
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
         
         ### Exports ###
         return(CardinalBlast,
@@ -323,7 +332,7 @@ class JobGenerator(ck.JobGenerator):
                     RelicCharge, AncientBowBooster, CurseTolerance, CurseTransition, SharpEyes,
                     RelicEvolution, EpicAdventure,
                     AncientGuidance, AdditionalTransition,globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat), CriticalReinforce,
-                    globalSkill.soul_contract()] +\
+                    globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [RelicUnboundDischarge, AncientAstraHolder, TripleImpact, EdgeOfResonance,
                         ComboAssultHolder, UltimateBlast, SplitMistel, CardinalTransition] +\
                 [Evolve, Raven, GuidedArrow, RavenTempest, ObsidionBarrierBlast, MirrorBreak, MirrorSpider] +\

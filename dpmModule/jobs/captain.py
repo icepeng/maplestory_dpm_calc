@@ -2,6 +2,7 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
+from ..execution.rules import ConditionRule, ReservationRule, RuleSet, ConcurrentRunRule
 from . import globalSkill
 from .jobbranch import pirates
 from .jobclass import adventurer
@@ -23,6 +24,16 @@ class JobGenerator(ck.JobGenerator):
 
     def get_modifier_optimization_hint(self):
         return core.CharacterModifier(pdamage=28, armor_ignore=22)
+
+    def get_ruleset(self):
+        ruleset = RuleSet()
+        ruleset.add_rule(ConditionRule('노틸러스', '노틸러스 어썰트', lambda sk: sk.is_cooltime_left(8000, 1)), RuleSet.BASE)
+        ruleset.add_rule(ConditionRule('소울 컨트랙트', '노틸러스 어썰트', lambda sk: sk.is_usable() or sk.is_cooltime_left(70000, 1)), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('노틸러스 어썰트', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '소울 컨트랙트'), RuleSet.BASE)
+        
+        return ruleset
 
     def get_passive_skill_list(
         self, vEhc, chtr: ck.AbstractCharacter, options: Dict[str, Any]
@@ -465,14 +476,14 @@ class JobGenerator(ck.JobGenerator):
 
         # 노틸러스 어썰트
         NautilusAssult.onAfter(NautilusAssult_2)
-        NautilusAssult.onAfter(
+        NautilusAssult.onJustAfter(
             core.OptionalElement(
                 partial(Nautilus.is_cooltime_left, 8000, -1),
                 Nautilus.controller(8000),
                 name="노틸러스 쿨타임 8초",
             )
         )
-        Nautilus.onAfter(
+        Nautilus.onJustAfter(
             core.OptionalElement(
                 partial(NautilusAssult.is_cooltime_left, 8000, -1),
                 NautilusAssult.controller(8000),
@@ -489,6 +500,12 @@ class JobGenerator(ck.JobGenerator):
         DeathTriggerInit.onAfter(core.RepeatElement(DeathTrigger, 7))
         DeathTriggerInit.onAfter(DeathTriggerEnd)
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return (
             RapidFire,
             [
@@ -504,6 +521,8 @@ class JobGenerator(ck.JobGenerator):
                 globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat),
                 QuickDraw,
                 globalSkill.soul_contract(),
+                Restraint,
+                WeaponPuff,
             ]
             + [
                 BattleshipBomber,

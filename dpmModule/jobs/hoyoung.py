@@ -5,8 +5,8 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import ConditionRule, DisableRule, RuleSet
-from . import globalSkill
+from ..execution.rules import ConcurrentRunRule, ConditionRule, DisableRule, RuleSet
+from . import globalSkill, jobutils
 from .jobbranch import thieves
 from math import ceil
 from typing import Any, Dict
@@ -140,6 +140,8 @@ class JobGenerator(ck.JobGenerator):
         ruleset = RuleSet()
         ruleset.add_rule(DisableRule('멸화염 : 천'), RuleSet.BASE)
         ruleset.add_rule(ConditionRule('권술 : 미생강변', '권술 : 흡성와류', lambda sk: sk.is_time_left(2000, 1)), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '선기 : 극대 분신난무'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '소울 컨트랙트'), RuleSet.BASE)
         # ruleset.add_rule(ConcurrentRunRule('소울 컨트랙트', '선기 : 천지인 환영'), RuleSet.BASE)
         # ruleset.add_rule(ConcurrentRunRule('레디 투 다이', '선기 : 천지인 환영'), RuleSet.BASE)
         return ruleset
@@ -371,10 +373,16 @@ class JobGenerator(ck.JobGenerator):
         Flames.onBefore(Pacho)
         Flames.onAfter(core.OptionalElement(GeumGoBong.is_available, GeumGoBong, YeoUiSeon))
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return(Topa,
             [globalSkill.maple_heros(chtr.level, name = "아니마의 용사", combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                 Booster, Talisman_Clone, Butterfly_Dream, Clone_Rampage, Nansin, Nansin_Final_Buff, Elemental_Clone, Miracle_Tonic, AnimaGoddessBless, ReadyToDie,
-                globalSkill.soul_contract()] +\
+                globalSkill.soul_contract(), Restraint, WeaponPuff] +\
             [Talisman_Seeker, Waryu, Summon_Sanryung, Miracle_Tonic_Charge] +\
             [Misaeng_Debuff, Talisman_Clone_Attack, Butterfly_Dream_Attack, Clone_Rampage_Attack, Elemental_Clone_Active,
                 Elemental_Clone_Passive, Nansin_Attack, Nansin_Final] +\

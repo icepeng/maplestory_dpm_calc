@@ -2,7 +2,7 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import RuleSet, ConcurrentRunRule, InactiveRule
+from ..execution.rules import InactiveRule, MutualRule, RuleSet, ConcurrentRunRule
 from . import globalSkill
 from .jobbranch import warriors
 from .jobclass import flora
@@ -98,6 +98,10 @@ class JobGenerator(ck.JobGenerator):
 
     def get_ruleset(self):
         ruleset = RuleSet()
+        ruleset.add_rule(ConcurrentRunRule("리스트레인트 링", "인피니트"), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule("웨폰퍼프 링", "스톰"), RuleSet.BASE)
+        ruleset.add_rule(InactiveRule("웨폰퍼프 링", "인피니트"), RuleSet.BASE)
+        ruleset.add_rule(MutualRule("웨폰퍼프 링", "인피니트"), RuleSet.BASE)
         return ruleset
 
     def get_modifier_optimization_hint(self) -> core.CharacterModifier:
@@ -277,10 +281,16 @@ class JobGenerator(ck.JobGenerator):
         Creation.protect_from_running()
         Wonder.protect_from_running()
 
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
+
         return(Divide,
                 [globalSkill.maple_heros(chtr.level, name = "레프의 용사", combat_level=self.combat), ResonanceStack, GraveDebuff, WraithOfGod, Restore,
                     AuraWeaponBuff, AuraWeapon, MagicCircuitFullDrive, FloraGoddessBless,
-                    globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(), globalSkill.soul_contract()] +\
+                    globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(), globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [EtherTick, Resonance, Grave, Blossom, Marker, Ruin, Storm, MirrorBreak, MirrorSpider, Shard] +\
                 [Order, Wonder, Territory, TerritoryEnd, Infinite, RuinFirstTick, RuinSecondTick, RestoreTick, Creation, Scool, ManaStorm] +\
                 [] +\

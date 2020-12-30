@@ -105,6 +105,8 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(ConcurrentRunRule('메탈아머 전탄발사(시전)', '봄버 타임'), RuleSet.BASE)
         ruleset.add_rule(ConcurrentRunRule('봄버 타임', '소울 컨트랙트'), RuleSet.BASE)
         ruleset.add_rule(ReservationRule('소울 컨트랙트', '봄버 타임'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '봄버 타임'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '봄버 타임'), RuleSet.BASE)
         return ruleset
     
     def generate(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
@@ -141,8 +143,8 @@ class JobGenerator(ck.JobGenerator):
 
         #마그네틱 필드는 로봇 마스터리, 하이퍼를 제외한 소환수 지속시간 영향을 받지 않음. 설치 완료 후부터 쿨타임이 돔.
         MagneticFieldInstall = core.DamageSkill("마그네틱 필드(설치)", 630, 0, 0, cooltime=-1).wrap(core.DamageSkillWrapper)
-        MagneticField = core.SummonSkill("마그네틱 필드", 0, 990, 200, 1, 60*1000*(0.4+passive_level*0.01)+10, cooltime = 160*0.75*1000, red=True, modifier = ROBOT_MASTERY).setV(vEhc, 3, 2, False).wrap(core.SummonSkillWrapper)
-        MagneticFieldBuff = core.BuffSkill("마그네틱 필드(버프)", 0, 60*1000*(0.4+passive_level*0.01)+10, cooltime = -1, pdamage = ROBOT_BUFF).wrap(core.BuffSkillWrapper)
+        MagneticField = core.SummonSkill("마그네틱 필드", 0, 990, 200, 1, 60*1000*ROBOT_SUMMON_REMAIN+10000, cooltime = 160*0.75*1000, red=True, modifier = ROBOT_MASTERY).setV(vEhc, 3, 2, False).wrap(core.SummonSkillWrapper)
+        MagneticFieldBuff = core.BuffSkill("마그네틱 필드(버프)", 0, 60*1000*ROBOT_SUMMON_REMAIN+10000, cooltime = -1, pdamage = ROBOT_BUFF).wrap(core.BuffSkillWrapper)
         
         SupportWaver = core.SummonSkill("서포트 웨이버", 630, 80000*ROBOT_SUMMON_REMAIN, 0, 0, 80*1000*ROBOT_SUMMON_REMAIN).wrap(core.SummonSkillWrapper)
         SupportWaverBuff = core.BuffSkill("서포트 웨이버(버프)", 0, 80*1000*ROBOT_SUMMON_REMAIN, pdamage_indep=10+5+math.ceil(passive_level/3), pdamage = ROBOT_BUFF, cooltime = -1, armor_ignore=10).wrap(core.BuffSkillWrapper)
@@ -212,11 +214,17 @@ class JobGenerator(ck.JobGenerator):
         
         RoboFactory.onEventEnd(RoboFactoryFinal)
         RoboFactory.onAfter(RoboFactoryBuff)
+
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
         
         return(MassiveFire,
                 [globalSkill.maple_heros(chtr.level, combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                     Booster, WillOfLiberty, LuckyDice, SupportWaverBuff, RobolauncherBuff, MagneticFieldBuff, RoboFactoryBuff, OpenGateBuff, MultipleOptionBuff, MechCarrierBuff, BomberTime, Overdrive,
-                    globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat), globalSkill.soul_contract()] +\
+                    globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat), globalSkill.soul_contract(), Restraint, WeaponPuff] +\
                 [MicroMissle, MechCarrier, BusterCallInit] +\
                 [HommingMissleHolder, RegistanceLineInfantry, SupportWaver, MagneticField, Robolauncher, RoboFactory, DistortionField, MultipleOption, MirrorBreak, MirrorSpider] +\
                 [BusterCallBuff, BusterCallPenalty] +\

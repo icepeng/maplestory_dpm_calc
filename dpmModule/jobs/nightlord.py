@@ -32,6 +32,8 @@ class JobGenerator(ck.JobGenerator):
         ruleset.add_rule(ConditionRule('메이플월드 여신의 축복', '스프레드 스로우', lambda sk: sk.is_active() or sk.is_usable()), RuleSet.BASE)
         ruleset.add_rule(ConcurrentRunRule('소울 컨트랙트', '스로우 블래스팅(액티브)'), RuleSet.BASE)
         ruleset.add_rule(ConcurrentRunRule('레디 투 다이', '소울 컨트랙트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '스프레드 스로우'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('웨폰퍼프 링', '스로우 블래스팅(액티브)'), RuleSet.BASE)
         ruleset.add_rule(InactiveRule('써든레이드', '스프레드 스로우'), RuleSet.BASE)
         ruleset.add_rule(InactiveRule('다크 플레어', '스프레드 스로우'), RuleSet.BASE)
         return ruleset
@@ -159,13 +161,19 @@ class JobGenerator(ck.JobGenerator):
 
         for sk in [QuarupleThrow, SuddenRaid, Pungma, SpreadThrowTick]:
             sk.onAfter(FatalVenom)
+
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
         
         return (QuarupleThrow, 
             [globalSkill.maple_heros(chtr.level, combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                     ShadowPartner, SpiritJavelin, PurgeArea, DarkFlare, BleedingToxin, EpicAdventure, 
                     globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat), UltimateDarksight, ReadyToDie, SpreadThrowInit,
                     ThrowBlasting, ThrowBlastingPassive, ThrowBlastingActive,
-                    globalSkill.soul_contract()] + \
+                    globalSkill.soul_contract(), Restraint, WeaponPuff] + \
                 [ArcaneOfDarklordFinal] + \
                 [SuddenRaid, SuddenRaidDOT, Pungma, PungmaHit, ArcaneOfDarklord, MirrorBreak, MirrorSpider, BleedingToxinDot, FatalVenom] +\
                 [] + \

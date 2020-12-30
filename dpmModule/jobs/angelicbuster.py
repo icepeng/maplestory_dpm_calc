@@ -2,7 +2,7 @@ from ..kernel import core
 from ..character import characterKernel as ck
 from functools import partial
 from ..status.ability import Ability_tool
-from ..execution.rules import RuleSet, ConcurrentRunRule
+from ..execution.rules import ConditionRule, RuleSet, ConcurrentRunRule
 from . import globalSkill
 from .jobbranch import pirates
 from .jobclass import nova
@@ -35,6 +35,9 @@ class JobGenerator(ck.JobGenerator):
     def get_ruleset(self):
         ruleset = RuleSet()
         ruleset.add_rule(ConcurrentRunRule('소울 컨트랙트', '스포트라이트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('스포트라이트', '소울 익절트'), RuleSet.BASE)
+        ruleset.add_rule(ConcurrentRunRule('리스트레인트 링', '스포트라이트'), RuleSet.BASE)
+        ruleset.add_rule(ConditionRule('웨폰퍼프 링', '스포트라이트', lambda sk: sk.is_active() and sk.is_time_left(20000, 1)), RuleSet.BASE)
         return ruleset
     
     def get_passive_skill_list(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
@@ -132,7 +135,7 @@ class JobGenerator(ck.JobGenerator):
         SpotLightBuff = core.BuffSkill("스포트라이트(버프)", 0, 30000, cooltime = -1, crit = (10+int(0.2*vEhc.getV(0,0)))*SPOTLIGHTHIT,
                                                                                 pdamage_indep = (3+(vEhc.getV(0,0)//10))*SPOTLIGHTHIT).isV(vEhc,0,0).wrap(core.BuffSkillWrapper)
         
-        MascortFamilier = core.BuffSkill("마스코트 패밀리어", 810, 30+(vEhc.getV(2,1)//5)*1000, red = True, cooltime = 120 * 1000).isV(vEhc,2,1).wrap(core.BuffSkillWrapper)
+        MascortFamilier = core.BuffSkill("마스코트 패밀리어", 810, (30+vEhc.getV(2,1)//5)*1000, red = True, cooltime = 120 * 1000).isV(vEhc,2,1).wrap(core.BuffSkillWrapper)
         MascortFamilierAttack = core.SummonSkill("트윙클 스타/매지컬 벌룬", 0, 2500, 1200, 5, (30+(vEhc.getV(2,1)//5))*1000, cooltime = -1).isV(vEhc,2,1).wrap(core.SummonSkillWrapper)
         ShinyBubbleBreath = core.SummonSkill("샤이니 버블 브레스", 0, 210, 250+10*vEhc.getV(2,1), 7, (3 + 0.4*8)*1000, cooltime = -1).isV(vEhc,2,1).wrap(core.SummonSkillWrapper)
 
@@ -164,14 +167,36 @@ class JobGenerator(ck.JobGenerator):
         
         SuperNova.onTick(SoulSeeker)
         #SuperNova.onConstraint(core.ConstraintElement("익절트와 함께", SoulExult, SoulExult.is_active))
+
+        Restraint = jobutils.restraint_ring(level=4)
+        WeaponPuff = jobutils.weaponpuff_ring(level=4, weapon_att=jobutils.get_weapon_total_att(chtr))
+
+        Restraint.onConstraint(core.ConstraintElement("시드링", WeaponPuff, WeaponPuff.is_not_active))
+        WeaponPuff.onConstraint(core.ConstraintElement("시드링", Restraint, Restraint.is_not_active))
         
     
-        return (Trinity_1,
-                [Booster, SoulGaze, LuckyDice, FinalContract,
-                    SoulExult, SoulContract, Overdrive,
-                    FinaturaFettucciaBuff, SpotLightBuff, MascortFamilier, NovaGoddessBless,
-                    globalSkill.maple_heros(chtr.level, name = "노바의 용사", combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(), globalSkill.useful_wind_booster()] +\
-                [FinaturaFettuccia, EnergyBurst, MirrorBreak, MirrorSpider] +\
-                [SuperNova, MascortFamilierAttack, ShinyBubbleBreath, SpotLight, TrinityFusionInit, Phanteon] +\
-                [] +\
-                [Trinity_1])
+        return (
+            Trinity_1,
+            [
+                globalSkill.maple_heros(chtr.level, name = "노바의 용사", combat_level=self.combat),
+                globalSkill.useful_sharp_eyes(),
+                globalSkill.useful_combat_orders(),
+                globalSkill.useful_wind_booster(),
+                Booster,
+                SoulGaze,
+                LuckyDice,
+                NovaGoddessBless,
+                MascortFamilier,
+                FinalContract,
+                SoulExult,
+                Overdrive,
+                SoulContract,
+                FinaturaFettucciaBuff,
+                SpotLightBuff,
+                Restraint,
+                WeaponPuff,
+            ] +
+            [FinaturaFettuccia, EnergyBurst, MirrorBreak, MirrorSpider] +
+            [SuperNova, MascortFamilierAttack, ShinyBubbleBreath, SpotLight, TrinityFusionInit, Phanteon] +
+            [Trinity_1]
+        )

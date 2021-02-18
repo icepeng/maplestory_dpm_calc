@@ -102,14 +102,14 @@ class JobGenerator(ck.JobGenerator):
 
         어파스 기준
         '''
-        DEALCYCLE = options.get('dealcycle', 'alpha_new')
+        DEALCYCLE = options.get('dealcycle', 'alpha_legacy')
 
         #### 마스터리 ####
         # 베타 마스터리의 공격력 +4는 무기 기본 공격력 차이
         # 제네시스 무기의 경우 +5로 변경 필요
 
-        AlphaMDF = core.CharacterModifier(pdamage_indep=34, crit=40, att=40, armor_ignore=30, crit_damage=50)
-        BetaMDF = core.CharacterModifier(pdamage_indep=49, crit=15, boss_pdamage=30, att=80+4)
+        AlphaMDF = core.CharacterModifier(pdamage_indep=5, crit=40, att=40, armor_ignore=30, crit_damage=50) + core.CharacterModifier(pdamage_indep=34)
+        BetaMDF = core.CharacterModifier(pdamage_indep=5, crit=15, boss_pdamage=30, att=80+4) + core.CharacterModifier(pdamage_indep=49)
 
         AlphaState = core.BuffSkill("상태-알파", 0, 9999*10000, cooltime=-1,
                                     pdamage_indep=AlphaMDF.pdamage_indep,
@@ -395,7 +395,7 @@ class JobGenerator(ck.JobGenerator):
         EgoWeaponBeta.protect_from_running()
 
         return(ComboHolder,
-               [globalSkill.maple_heros(chtr.level, name="륀느의 가호", combat_level=0), globalSkill.useful_sharp_eyes(), globalSkill.useful_wind_booster(), globalSkill.useful_combat_orders(),
+               [globalSkill.maple_heros(chtr.level, name="륀느의 가호", combat_level=0), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(),
                 DivineAura, AlphaState, BetaState, DivineLeer, AuraWeaponBuff, AuraWeapon, RhinneBless,
                 DoubleTime, TimeDistortion, TimeHolding, LimitBreak, LimitBreakCDR, LimitBreakFinal, CriticalBind,
                 SoulContract] +

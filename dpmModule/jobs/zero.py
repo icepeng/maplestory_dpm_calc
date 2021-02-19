@@ -59,7 +59,7 @@ class JobGenerator(ck.JobGenerator):
         self.jobtype = "STR"
         self.jobname = "제로"
         self.ability_list = Ability_tool.get_ability_set('boss_pdamage', 'crit', 'buff_rem')
-        self.preEmptiveSkills = 2
+        self.preEmptiveSkills = 1
 
     def get_ruleset(self):
         ruleset = RuleSet()
@@ -70,8 +70,9 @@ class JobGenerator(ck.JobGenerator):
     def get_passive_skill_list(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
         Mastery = core.InformedCharacterModifier("숙련도", mastery=90)
         ResolutionTime = core.InformedCharacterModifier("리졸브 타임", pdamage_indep=25, stat_main=50)
+        BladeMastery = core.InformedCharacterModifier("태도/대검 마스터리", pdamage_indep=5)
 
-        return [Mastery, ResolutionTime]
+        return [Mastery, ResolutionTime, BladeMastery]
 
     def get_not_implied_skill_list(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
         ArmorSplit = core.InformedCharacterModifier("아머 스플릿", armor_ignore=50)
@@ -108,8 +109,8 @@ class JobGenerator(ck.JobGenerator):
         # 베타 마스터리의 공격력 +4는 무기 기본 공격력 차이
         # 제네시스 무기의 경우 +5로 변경 필요
 
-        AlphaMDF = core.CharacterModifier(pdamage_indep=5, crit=40, att=40, armor_ignore=30, crit_damage=50) + core.CharacterModifier(pdamage_indep=34)
-        BetaMDF = core.CharacterModifier(pdamage_indep=5, crit=15, boss_pdamage=30, att=80+4) + core.CharacterModifier(pdamage_indep=49)
+        AlphaMDF = core.CharacterModifier(crit=40, att=40, armor_ignore=30, crit_damage=50) + core.CharacterModifier(pdamage_indep=34)
+        BetaMDF = core.CharacterModifier(crit=15, boss_pdamage=30, att=80+4) + core.CharacterModifier(pdamage_indep=49)
 
         AlphaState = core.BuffSkill("상태-알파", 0, 9999*10000, cooltime=-1,
                                     pdamage_indep=AlphaMDF.pdamage_indep,
@@ -266,7 +267,8 @@ class JobGenerator(ck.JobGenerator):
         ######   Skill Wrapper   ######
 
         # 디바인 오라
-        DivineAura = DivineAuraWrapper([LimitBreak, TimeDistortion])
+        # 익스그린 사용시 알파상태에서 디바인 포스 사용해도 풀공속
+        DivineAura = DivineAuraWrapper([AlphaState, LimitBreak, TimeDistortion])
 
         ### 스킬 연결 ###
         ### 알파 ###

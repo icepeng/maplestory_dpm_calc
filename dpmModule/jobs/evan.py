@@ -143,6 +143,8 @@ class JobGenerator(ck.JobGenerator):
     def get_passive_skill_list(self, vEhc, chtr : ck.AbstractCharacter, options: Dict[str, Any]):
         passive_level = chtr.get_base_modifier().passive_level + self.combat
 
+        MP_RATE = options.get("mp_rate", 100)
+
         InheritWill = core.InformedCharacterModifier("계승된 의지",att = 10, stat_main = 10, stat_sub = 10)
         LinkedMagic = core.InformedCharacterModifier("링크드 매직",att = 20)
         
@@ -156,7 +158,7 @@ class JobGenerator(ck.JobGenerator):
         DragonPotential = core.InformedCharacterModifier("드래곤 포텐셜",armor_ignore = 20)
         
         MagicMastery = core.InformedCharacterModifier("매직 마스터리",att = 30 + passive_level, crit_damage = 20 + passive_level//2)
-        DragonFury = core.InformedCharacterModifier("드래곤 퓨리",patt = 35 + passive_level)
+        DragonFury = core.InformedCharacterModifier("드래곤 퓨리", patt = (35 + passive_level) * bool(MP_RATE >= 15))
         HighDragonPotential = core.InformedCharacterModifier("하이 드래곤 포텐셜",boss_pdamage = 20+passive_level)
 
         SpiralOfManaPassive = core.InformedCharacterModifier("스파이럴 오브 마나(패시브)", att=5+vEhc.getV(0,0))

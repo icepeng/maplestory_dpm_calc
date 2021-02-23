@@ -71,12 +71,12 @@ class JobGenerator(ck.JobGenerator):
         EpicAdventure = self.load_skill_wrapper("에픽 어드벤처")
 
         # Damage Skills
-        ChainLightening = self.load_skill_wrapper("체인 라이트닝", vEhc)
+        ChainLightning = self.load_skill_wrapper("체인 라이트닝", vEhc)
 
         FrozenOrb = self.load_skill_wrapper("프로즌 오브", vEhc)
-        LighteningSpear = self.load_skill_wrapper("라이트닝 스피어", vEhc)
-        LighteningSpearSingle = self.load_skill_wrapper("라이트닝 스피어(키다운)", vEhc)
-        LighteningSpearFinalizer = self.load_skill_wrapper("라이트닝 스피어(막타)", vEhc)
+        LightningSphere = self.load_skill_wrapper("라이트닝 스피어", vEhc)
+        LightningSphereSingle = self.load_skill_wrapper("라이트닝 스피어(키다운)", vEhc)
+        LightningSphereFinalizer = self.load_skill_wrapper("라이트닝 스피어(막타)", vEhc)
 
         IceAgeInit = self.load_skill_wrapper("아이스 에이지(개시)", vEhc)
         IceAgeSummon = self.load_skill_wrapper("아이스 에이지(장판)", vEhc)
@@ -123,8 +123,8 @@ class JobGenerator(ck.JobGenerator):
         UnstableMemorize = adventurer.UnstableMemorizeWrapper(vEhc, 4, 4, chtr.get_skill_modifier())
 
         for sk, weight in [(EnergyBolt, 1), (ColdBeam, 5), (ThunderBolt, 5), (IceStrike, 10),
-                           (GlacialChain, 10), (ThunderStorm, 10), (ChainLightening, 25), (Blizzard, 25), (FrozenOrb, 25),
-                           (Infinity, 25), (Elquiness, 25), (LighteningSpear, 10), (EpicAdventure, 10)]:
+                           (GlacialChain, 10), (ThunderStorm, 10), (ChainLightning, 25), (Blizzard, 25), (FrozenOrb, 25),
+                           (Infinity, 25), (Elquiness, 25), (LightningSphere, 10), (EpicAdventure, 10)]:
 
             UnstableMemorize.add_skill(sk, weight)
 
@@ -165,27 +165,27 @@ class JobGenerator(ck.JobGenerator):
         FrozenOrb.onTick(BlizzardPassive)  # TODO: onTick 실행순서 바뀌면 순서 조정해야 함
         FrozenOrb.onTick(FrostIncrement)
 
-        # Chain Lightening
-        ChainLightening.add_runtime_modifier(FrostEffect, applyFrostEffect)
-        ChainLightening.onJustAfter(FrostDecrement)
-        ChainLightening.onAfter(BlizzardPassive)
+        # Chain Lightning
+        ChainLightning.add_runtime_modifier(FrostEffect, applyFrostEffect)
+        ChainLightning.onJustAfter(FrostDecrement)
+        ChainLightning.onAfter(BlizzardPassive)
 
         # Blizzard
         Blizzard.onJustAfter(FrostIncrement)
         BlizzardPassive.onJustAfter(FrostEffect.stackController(0.6))
 
-        # Lightening Spear
-        LighteningSpearSingle.add_runtime_modifier(FrostEffect, applyFrostEffect)
-        LighteningSpearSingle.onJustAfter(FrostDecrement)
-        LighteningSpearSingle.onAfter(BlizzardPassive)
-        LighteningSpearFinalizer.add_runtime_modifier(FrostEffect, applyFrostEffect)
-        LighteningSpearFinalizer.onJustAfter(FrostDecrement)
-        LighteningSpearFinalizer.onAfter(BlizzardPassive)
+        # Lightning Sphere
+        LightningSphereSingle.add_runtime_modifier(FrostEffect, applyFrostEffect)
+        LightningSphereSingle.onJustAfter(FrostDecrement)
+        LightningSphereSingle.onAfter(BlizzardPassive)
+        LightningSphereFinalizer.add_runtime_modifier(FrostEffect, applyFrostEffect)
+        LightningSphereFinalizer.onJustAfter(FrostDecrement)
+        LightningSphereFinalizer.onAfter(BlizzardPassive)
 
-        LighteningRepeator = core.RepeatElement(LighteningSpearSingle, 14)
-        LighteningRepeator.onAfter(LighteningSpearFinalizer)
+        LightningRepeator = core.RepeatElement(LightningSphereSingle, 14)
+        LightningRepeator.onAfter(LightningSphereFinalizer)
 
-        LighteningSpear.onAfter(LighteningRepeator)
+        LightningSphere.onAfter(LightningRepeator)
 
         # Ice Aura
         IceAura.onTick(FrostIncrement)
@@ -212,7 +212,7 @@ class JobGenerator(ck.JobGenerator):
             JupyterThunder.onEventElapsed(FrostDecrement, 330 * 5 * i)  # 5회 타격시마다 빙결 감소, 총 6회 감소
 
         for sk in [
-            ChainLightening, LighteningSpearSingle, LighteningSpearFinalizer, ThunderStorm, ThunderBolt,
+            ChainLightning, LightningSphereSingle, LightningSphereFinalizer, ThunderStorm, ThunderBolt,
             ThunderBrake1, ThunderBrake2, ThunderBrake3, ThunderBrake4,
             ThunderBrake5, ThunderBrake6, ThunderBrake7, ThunderBrake8
         ]:
@@ -220,17 +220,17 @@ class JobGenerator(ck.JobGenerator):
 
         # Overload Mana
         overload_mana_builder = magicians.OverloadManaBuilder(vEhc, 1, 5)
-        for sk in [ChainLightening, FrozenOrb, Blizzard, LighteningSpearSingle, LighteningSpearFinalizer, IceAgeInit,
+        for sk in [ChainLightning, FrozenOrb, Blizzard, LightningSphereSingle, LightningSphereFinalizer, IceAgeInit,
                    ThunderBrake1, ThunderBrake2, ThunderBrake3, ThunderBrake4, ThunderBrake5, ThunderBrake6, ThunderBrake7, ThunderBrake8,
                    JupyterThunder, EnergyBolt, ColdBeam, ThunderBolt, IceStrike, GlacialChain]:
             overload_mana_builder.add_skill(sk)
         OverloadMana = overload_mana_builder.get_buff()
 
-        return (ChainLightening,
+        return (ChainLightning,
                 [Infinity, Meditation, EpicAdventure, OverloadMana, FrostEffect,
                  globalSkill.maple_heros(chtr.level, combat_level=self.combat), globalSkill.useful_sharp_eyes(), globalSkill.useful_combat_orders(), globalSkill.useful_wind_booster(),
                  globalSkill.MapleHeroes2Wrapper(vEhc, 0, 0, chtr.level, self.combat), globalSkill.soul_contract(),
-                 IceAgeInit, Blizzard, JupyterThunder, LighteningSpear, ThunderBrake, MirrorBreak, MirrorSpider,
+                 IceAgeInit, Blizzard, JupyterThunder, LightningSphere, ThunderBrake, MirrorBreak, MirrorSpider,
                  ThunderStorm, Elquiness, IceAura, IceAgeSummon, FrozenOrb, SpiritOfSnow,
                  UnstableMemorize,
-                 ChainLightening])
+                 ChainLightning])

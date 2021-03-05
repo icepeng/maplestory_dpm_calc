@@ -102,7 +102,7 @@ default:
     - 4
     - 8
   head:
-    id: 앱솔랩스
+    id: 카루타
     <<: *armor
   top:
     id: 카루타
